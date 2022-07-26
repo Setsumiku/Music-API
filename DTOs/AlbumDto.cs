@@ -9,7 +9,7 @@ namespace Music_API.DTOs
         [Required(ErrorMessage = "Description is required.")]
         [StringLength(15, MinimumLength = 1)]
         public string AlbumDescription { get; set; }
-        public List<Song> Songs { get; set; }
+        public List<Song> AlbumSongs { get; set; }
         public Artist AlbumArtist { get; set; }
     }
 }

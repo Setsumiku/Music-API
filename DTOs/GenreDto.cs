@@ -10,5 +10,6 @@ namespace Music_API.DTOs
         [StringLength(15, MinimumLength = 1)]
         public string GenreDescription { get; set; }
         public List<Album> GenreAlbums { get; set; }
+        public List<Song> GenreSongs { get; set; }
     }
 }
