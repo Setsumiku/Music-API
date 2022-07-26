@@ -9,7 +9,8 @@ namespace Music_API.Profiles
         public SongProfiles()
         {
             CreateMap<Song, SongDto>()
-                .ForMember(song => song.SongAlbum, songDto => songDto.MapFrom(song => song.SongAlbum))
+                .ForMember(song => song.SongDescription, songDto => songDto.MapFrom(song => song.SongDescription));
+            CreateMap<Song, SongReadDto>()
                 .ForMember(song => song.SongDescription, songDto => songDto.MapFrom(song => song.SongDescription));
         }
     }

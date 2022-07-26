@@ -11,6 +11,8 @@ namespace Music_API.Profiles
             CreateMap<Artist, ArtistDto>()
                 .ForMember(artist=>artist.ArtistAlbums, artistDto => artistDto.MapFrom(artist=>artist.ArtistAlbums))
                 .ForMember(artist=>artist.ArtistDescription, artistDto => artistDto.MapFrom(artist=>artist.ArtistDescription));
+            CreateMap<Artist, ArtistReadDto>()
+                .ForMember(artist => artist.ArtistDescription, artistDto => artistDto.MapFrom(artist => artist.ArtistDescription));
         }
     }
 }
