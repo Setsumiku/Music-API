@@ -96,7 +96,7 @@ namespace Music_API.Controllers
             try
             {
                 var genreToUse = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreSongs" });
-                return Ok(_mapper.Map<IEnumerable<GenreReadDto>>(genreToUse.GenreSongs));
+                return Ok(_mapper.Map<IEnumerable<SongReadDto>>(genreToUse.GenreSongs));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -121,9 +121,11 @@ namespace Music_API.Controllers
         }
         // POST api/<MusicAPIController>/genres/{id}/songs
         [HttpPost("genres/{id}/songs")]
-        public async Task<IActionResult> AddSong([FromBody] string songName)
+        public async Task<IActionResult> AddSong([FromBody] SongDto songDto)
         {
-            var savedSong = await _songRepository.CreateAsync(new Song() { SongDescription = songName });
+            var songToAdd = new Song();
+            _mapper.Map(songDto, songToAdd);
+            var savedSong = await _songRepository.CreateAsync(songToAdd);
             return Ok(_mapper.Map<SongReadDto>(savedSong));
         }
         // DELETE api/<MusicAPIController>/genres/{id}/songs
