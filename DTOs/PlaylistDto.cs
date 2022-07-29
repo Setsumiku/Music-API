@@ -4,7 +4,7 @@ namespace Music_API.DTOs
 {
     public class PlaylistDto
     {
-        internal int PlaylistId { get; set; }
+        public int PlaylistId { get; set; }
 
         [Required(ErrorMessage = "Description is required.")]
         [StringLength(15, MinimumLength = 1)]

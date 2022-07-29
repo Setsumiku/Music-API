@@ -193,5 +193,13 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+        ////POST api/<MusicAPIController>/genres2
+        //[HttpPost("genres2")]
+        //public async Task<IActionResult> CreateCascade([FromBody] GenreDto fullGenre)
+        //{
+        //    //fullGenre.GenreAlbums.ForEach(album =>album.Artist.
+        //    _ = await _genreRepository.CreateAsync(_mapper.Map<Genre>(fullGenre));
+        //    return Ok();
+        //}
     }
 }

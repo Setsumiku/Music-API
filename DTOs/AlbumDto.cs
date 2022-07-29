@@ -5,11 +5,12 @@ namespace Music_API.DTOs
 {
     public class AlbumDto
     {
-        internal int AlbumId { get; set; }
+        public int AlbumId { get; set; }
         [Required(ErrorMessage = "Description is required.")]
         [StringLength(15, MinimumLength = 1)]
         public string AlbumDescription { get; set; }
-        public List<Song>? AlbumSongs { get; set; }
-        public Artist? Artist { get; set; }
+        public List<SongDto>? AlbumSongs { get; set; }
+        public ArtistDto? Artist { get; set; }
+        public Genre? Genre { get; set; }
     }
 }
