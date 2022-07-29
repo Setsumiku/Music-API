@@ -112,8 +112,8 @@ namespace Music_API.Controllers
             try
             {
                 var albumToUse = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
-                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs)) : 
-                    NotFound();
+                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs)) 
+                    : NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {

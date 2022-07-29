@@ -27,7 +27,7 @@ namespace Music_API.Controllers
         // GET: api/<MusicAPIController>/playlists
         [HttpGet("playlists")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<PlaylistReadDto>>(await _playlistRepository.GetAllAsync(new string[] { })));
+            => Ok(_mapper.Map<IEnumerable<PlaylistReadDto>>(await _playlistRepository.GetAllAsync(Array.Empty<string>())));
         /// <summary>
         /// Use to receive specific Playlist
         /// </summary>
@@ -38,7 +38,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, Array.Empty<string>());
-            return foundPlaylist != null ? Ok(_mapper.Map<PlaylistReadDto>(foundPlaylist))
+            return foundPlaylist is not null ? Ok(_mapper.Map<PlaylistReadDto>(foundPlaylist))
                                         : NotFound();
         }
         /// <summary>
@@ -51,7 +51,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Add([FromBody] string playlistName)
         {
             var savedPlaylist = await _playlistRepository.CreateAsync(new Playlist() { PlaylistDescription = playlistName });
-            return Ok(_mapper.Map<PlaylistReadDto>(savedPlaylist));
+            return Created("api/MusicAPIPlaylist/playlists/" + savedPlaylist.PlaylistId, _mapper.Map<PlaylistReadDto>(savedPlaylist));
         }
         /// <summary>
         /// Use to Edit Playlist
@@ -61,16 +61,18 @@ namespace Music_API.Controllers
         /// <returns>Updated Playlist</returns>
         // PUT api/<MusicAPIController>/playlists/{id}
         [HttpPut("playlists/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] PlaylistDto playlist)
+        public async Task<IActionResult> Update(string id, [FromBody] PlaylistReadDto playlist)
         {
-            playlist.PlaylistId = Int32.Parse(id);
-            if (id != playlist.PlaylistId.ToString())
-                return BadRequest();
-
             try
             {
-                var updatedPlaylist = await _playlistRepository.UpdateAsync(_mapper.Map<Playlist>(playlist));
-                return Ok(_mapper.Map<PlaylistDto>(updatedPlaylist));
+                var playlistToUpdate = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId.ToString() == id, Array.Empty<string>());
+                if (playlistToUpdate != null)
+                {
+                    playlistToUpdate.PlaylistDescription = playlist.PlaylistDescription;
+                    _ = await _playlistRepository.UpdateAsync(playlistToUpdate);
+                    return Ok();
+                }
+                else return NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -89,9 +91,10 @@ namespace Music_API.Controllers
             try
             {
                 var playlistToDelete = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId.ToString() == id, new string[] { "PlaylistSongs" });
-                return Ok(await _playlistRepository.DeleteAsync(playlistToDelete));
+                _ = await _playlistRepository.DeleteAsync(playlistToDelete);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is NullReferenceException || e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -108,7 +111,8 @@ namespace Music_API.Controllers
             try
             {
                 var playlistToUse = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, new string[] { "PlaylistSongs" });
-                return Ok(_mapper.Map<IEnumerable<SongReadDto>>(playlistToUse.PlaylistSongs));
+                return playlistToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(playlistToUse.PlaylistSongs))
+                    : NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -128,11 +132,11 @@ namespace Music_API.Controllers
             try
             {
                 var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, new string[] { "PlaylistSongs" });
-                return foundPlaylist != null ? Ok(_mapper.Map<SongReadDto>(foundPlaylist.PlaylistSongs[id2 - 1]))
-                                            : NotFound();
-
+                var songFromPlaylist = foundPlaylist.PlaylistSongs[id2 - 1];
+                return foundPlaylist is not null ? Ok(_mapper.Map<SongReadDto>(songFromPlaylist))
+                       : NotFound();
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
+            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is OverflowException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -149,15 +153,15 @@ namespace Music_API.Controllers
         {
             var playlistToAddSongTo = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId.ToString() == id, new string[] { "PlaylistSongs" });
             if (playlistToAddSongTo is null)
-                return BadRequest();
+                return NotFound();
             var songToAdd = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id2, Array.Empty<string>());
             if (songToAdd is null)
-                return BadRequest();
+                return NotFound();
             try
             {
                 playlistToAddSongTo.PlaylistSongs.Add(songToAdd);
                 var updatedPlaylist = await _playlistRepository.UpdateAsync(playlistToAddSongTo);
-                return Ok(_mapper.Map<PlaylistDto>(updatedPlaylist));
+                return Ok();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -177,11 +181,13 @@ namespace Music_API.Controllers
             try
             {
                 var playlistToDeleteFrom = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId.ToString() == id, new string[] { "PlaylistSongs" });
-                playlistToDeleteFrom.PlaylistSongs.RemoveAt(Int32.Parse(id2)-1);
-                return playlistToDeleteFrom != null ? Ok(_mapper.Map<PlaylistDto>(await _playlistRepository.UpdateAsync(playlistToDeleteFrom)))
-                    : BadRequest();
+                if (playlistToDeleteFrom is null) return NotFound();
+                playlistToDeleteFrom.PlaylistSongs.RemoveAt(Int32.Parse(id2) - 1);
+                _ = await _playlistRepository.UpdateAsync(playlistToDeleteFrom);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is ArgumentOutOfRangeException || e is FormatException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is OverflowException || e is ArgumentOutOfRangeException
+            || e is FormatException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
