@@ -61,24 +61,20 @@ namespace Music_API.Controllers
         /// <returns>Updated Genre</returns>
         // PUT api/<MusicAPIController>/genres/{id}
         [HttpPut("genres/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] GenreDto genre)
+        public async Task<IActionResult> Update(string id, [FromBody] GenreReadDto genre)
         {
             try
             {
-                genre.GenreId = Int32.Parse(id);
+                var genreToUpdate = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, Array.Empty<string>());
+                if (genreToUpdate != null)
+                {
+                    genreToUpdate.GenreDescription = genre.GenreDescription;
+                    _ = await _genreRepository.UpdateAsync(genreToUpdate);
+                    return Ok();
+                }
+                else return NotFound();
             }
-            catch (Exception ex) when (ex is FormatException)
-            {
-                return BadRequest();
-            }
-            if (id != genre.GenreId.ToString())
-                return BadRequest();
-            try
-            {
-                var updatedGenre = await _genreRepository.UpdateAsync(_mapper.Map<Genre>(genre));
-                return Ok(_mapper.Map<GenreDto>(updatedGenre));
-            }
-            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException) 
+            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -95,9 +91,10 @@ namespace Music_API.Controllers
             try
             {
                 var genreToDelete = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, Array.Empty<string>());
-                return Ok(await _genreRepository.DeleteAsync(genreToDelete));
+                _ = await _genreRepository.DeleteAsync(genreToDelete);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException || e is NullReferenceException)
             {
                 return NotFound();
             }
@@ -114,7 +111,8 @@ namespace Music_API.Controllers
             try
             {
                 var genreToUse = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
-                return Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(genreToUse.GenreAlbums));
+                return genreToUse is not null ? Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(genreToUse.GenreAlbums))
+                    : NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -134,11 +132,12 @@ namespace Music_API.Controllers
             try
             {
                 var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
-                return foundGenre != null ? Ok(_mapper.Map<GenreReadDto>(foundGenre.GenreAlbums[id2 - 1]))
-                                            : NotFound();
+                var albumFromGenre = foundGenre.GenreAlbums[id2 - 1];
+                return foundGenre is not null ? Ok(_mapper.Map<GenreReadDto>(albumFromGenre))
+                      : NotFound();
 
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
+            catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -155,15 +154,15 @@ namespace Music_API.Controllers
         {
             var genreToAddAlbumTo = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreSongs" });
             if (genreToAddAlbumTo is null)
-                return BadRequest();
+                return NotFound();
             var albumToAdd = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id2, Array.Empty<string>());
             if (albumToAdd is null)
-                return BadRequest();
+                return NotFound();
             try
             {
                 genreToAddAlbumTo.GenreAlbums.Add(albumToAdd);
                 var updatedGenre = await _genreRepository.UpdateAsync(genreToAddAlbumTo);
-                return Ok(_mapper.Map<GenreDto>(genreToAddAlbumTo));
+                return Ok();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -183,11 +182,13 @@ namespace Music_API.Controllers
             try
             {
                 var genreToDeleteFrom = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreAlbums" });
+                if (genreToDeleteFrom is null) return NotFound();
                 genreToDeleteFrom.GenreAlbums.RemoveAt(Int32.Parse(id2) - 1);
-                return genreToDeleteFrom != null ? Ok(_mapper.Map<GenreDto>(await _genreRepository.UpdateAsync(genreToDeleteFrom)))
-                    : BadRequest();
+                _ = await _genreRepository.UpdateAsync(genreToDeleteFrom);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is ArgumentOutOfRangeException || e is FormatException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is OverflowException || e is ArgumentOutOfRangeException
+            || e is FormatException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }

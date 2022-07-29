@@ -126,7 +126,7 @@ namespace Music_API.Controllers
         /// <param name="id">String for ID of Album</param>
         /// <param name="id2">String for ID of Song</param>
         /// <returns>Song from the Album</returns>
-        // GET api/<MusicAPIController>/albums/{id}/songs/{id}
+        // GET api/<MusicAPIController>/albums/{id}/songs/{id2}
         [HttpGet("albums/{id}/songs/{id2}")]
         public async Task<IActionResult> GetSingleSongFromAlbum(int id, int id2)
         {
@@ -134,7 +134,7 @@ namespace Music_API.Controllers
             {
                 var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
                 var songFromAlbum = foundAlbum.AlbumSongs[id2 - 1];
-                return (foundAlbum is not null) ? Ok(_mapper.Map<SongReadDto>(songFromAlbum)) 
+                return foundAlbum is not null ? Ok(_mapper.Map<SongReadDto>(songFromAlbum)) 
                     : NotFound();
             }
             catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
