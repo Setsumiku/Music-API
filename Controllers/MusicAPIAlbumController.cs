@@ -1,11 +1,6 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
-using Music_API.DTOs;
-using Swashbuckle.AspNetCore.Annotations;
-using System.Net;
 
 namespace Music_API.Controllers
 {
@@ -31,9 +26,8 @@ namespace Music_API.Controllers
         /// <returns>Albums</returns>
         // GET: api/<MusicAPIController>/albums
         [HttpGet("albums")]
-        [SwaggerResponse((int)HttpStatusCode.OK, "Found albums")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(await _albumRepository.GetAllAsync(new string[] { })));
+            => Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(await _albumRepository.GetAllAsync(Array.Empty<string>())));
 
         /// <summary>
         /// Use to receive specific Album
@@ -143,7 +137,7 @@ namespace Music_API.Controllers
                 return (foundAlbum is not null) ? Ok(_mapper.Map<SongReadDto>(songFromAlbum)) 
                     : NotFound();
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
+            catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -193,7 +187,8 @@ namespace Music_API.Controllers
                 _ = await _albumRepository.UpdateAsync(albumToDeleteFrom);
                 return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is ArgumentOutOfRangeException || e is FormatException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is OverflowException || e is ArgumentOutOfRangeException 
+            || e is FormatException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }

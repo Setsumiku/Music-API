@@ -1,9 +1,6 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
-using Music_API.DTOs;
 
 namespace Music_API.Controllers
 {
@@ -52,8 +49,15 @@ namespace Music_API.Controllers
         [HttpPost("artists")]
         public async Task<IActionResult> Add([FromBody] string artistName)
         {
-            var savedArtist = await _artistRepository.CreateAsync(new Artist() { ArtistDescription = artistName });
-            return Ok(_mapper.Map<ArtistReadDto>(savedArtist));
+            try
+            {
+                var savedArtist = await _artistRepository.CreateAsync(new Artist() { ArtistDescription = artistName });
+                return Created("api/MusicAPIArtist/artists/" + savedArtist.ArtistId, _mapper.Map<ArtistReadDto>(savedArtist));
+            }
+            catch (Exception ex) when (ex is DbUpdateConcurrencyException)
+            {
+                return NotFound();
+            }
         }
         /// <summary>
         /// Use to Edit Artist
@@ -63,24 +67,18 @@ namespace Music_API.Controllers
         /// <returns>Updated Artist</returns>
         // PUT api/<MusicAPIController>/artists/{id}
         [HttpPut("artists/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] ArtistDto artist)
+        public async Task<IActionResult> Update(string id, [FromBody] ArtistReadDto artist)
         {
             try
             {
-                artist.ArtistId = Int32.Parse(id);
-            }
-            catch (Exception ex) when (ex is FormatException)
-            {
-                return BadRequest();
-            }
-
-            if (id != artist.ArtistId.ToString())
-                return BadRequest();
-
-            try
-            {
-                var updatedArtist = await _artistRepository.UpdateAsync(_mapper.Map<Artist>(artist));
-                return Ok(_mapper.Map<ArtistReadDto>(updatedArtist));
+                var artistToUpdate = await _artistRepository.GetSingleByConditionAsync(artist => artist.ArtistId.ToString() == id, Array.Empty<string>());
+                if (artistToUpdate != null)
+                {
+                    artistToUpdate.ArtistDescription = artist.ArtistDescription;
+                    _ = await _artistRepository.UpdateAsync(artistToUpdate);
+                    return Ok();
+                }
+                else return NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -99,7 +97,8 @@ namespace Music_API.Controllers
             try
             {
                 var artistToDelete = await _artistRepository.GetSingleByConditionAsync(artist => artist.ArtistId.ToString() == id, Array.Empty<string>());
-                return Ok(await _artistRepository.DeleteAsync(artistToDelete));
+                _ = await _artistRepository.DeleteAsync(artistToDelete);
+                return Ok();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
