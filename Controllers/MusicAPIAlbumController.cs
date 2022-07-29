@@ -52,7 +52,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Add([FromBody] string albumName)
         {
             var savedAlbum = await _albumRepository.CreateAsync(new Album() { AlbumDescription = albumName });
-            return Created("api/MusicAPIAlbum/albums/"+savedAlbum.AlbumId,_mapper.Map<AlbumReadDto>(savedAlbum));
+            return Created("api/MusicAPIAlbum/albums/" + savedAlbum.AlbumId, _mapper.Map<AlbumReadDto>(savedAlbum));
         }
         /// <summary>
         /// Use to Edit Album
@@ -67,7 +67,7 @@ namespace Music_API.Controllers
             try
             {
                 var albumToUpdate = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, Array.Empty<string>());
-                if (albumToUpdate != null)
+                if (albumToUpdate is not null)
                 {
                     albumToUpdate.AlbumDescription = album.AlbumDescription;
                     _ = await _albumRepository.UpdateAsync(albumToUpdate);
@@ -91,7 +91,7 @@ namespace Music_API.Controllers
         {
             try
             {
-                var albumToDelete = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, new string[] { "AlbumSongs"});
+                var albumToDelete = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, new string[] { "AlbumSongs" });
                 _ = await _albumRepository.DeleteAsync(albumToDelete);
                 return Ok();
             }
@@ -112,7 +112,7 @@ namespace Music_API.Controllers
             try
             {
                 var albumToUse = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
-                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs)) 
+                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs))
                     : NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
@@ -134,7 +134,7 @@ namespace Music_API.Controllers
             {
                 var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
                 var songFromAlbum = foundAlbum.AlbumSongs[id2 - 1];
-                return foundAlbum is not null ? Ok(_mapper.Map<SongReadDto>(songFromAlbum)) 
+                return foundAlbum is not null ? Ok(_mapper.Map<SongReadDto>(songFromAlbum))
                     : NotFound();
             }
             catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
@@ -187,7 +187,7 @@ namespace Music_API.Controllers
                 _ = await _albumRepository.UpdateAsync(albumToDeleteFrom);
                 return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is OverflowException || e is ArgumentOutOfRangeException 
+            catch (Exception e) when (e is ArgumentNullException || e is OverflowException || e is ArgumentOutOfRangeException
             || e is FormatException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();

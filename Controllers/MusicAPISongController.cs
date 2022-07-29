@@ -41,7 +41,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundSong = await _songRepository.GetSingleByConditionAsync(song => song.SongId == id, Array.Empty<string>());
-            return foundSong != null ? Ok(_mapper.Map<SongReadDto>(foundSong))
+            return foundSong is not null ? Ok(_mapper.Map<SongReadDto>(foundSong))
                                         : NotFound();
         }
         /// <summary>
@@ -54,7 +54,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Add([FromBody] string songName)
         {
             var savedSong = await _songRepository.CreateAsync(new Song() { SongDescription = songName });
-            return Ok(_mapper.Map<SongReadDto>(savedSong));
+            return Created("api/MusicAPISong/songs/" + savedSong.SongId, _mapper.Map<SongReadDto>(savedSong));
         }
         /// <summary>
         /// Use to Edit Song
@@ -64,16 +64,18 @@ namespace Music_API.Controllers
         /// <returns>Updated Song</returns>
         // PUT api/<MusicAPIController>/songs/{id}
         [HttpPut("songs/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] SongDto song)
+        public async Task<IActionResult> Update(string id, [FromBody] SongReadDto song)
         {
-            song.SongId = Int32.Parse(id);
-            if (id != song.SongId.ToString())
-                return BadRequest();
-
             try
             {
-                var updatedSong = await _songRepository.UpdateAsync(_mapper.Map<Song>(song));
-                return Ok(_mapper.Map<SongReadDto>(updatedSong));
+                var songToUpdate = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id, Array.Empty<string>());
+                if (songToUpdate is not null)
+                {
+                    songToUpdate.SongDescription = song.SongDescription;
+                    _ = await _songRepository.UpdateAsync(songToUpdate);
+                    return Ok();
+                }
+                else return NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -92,9 +94,10 @@ namespace Music_API.Controllers
             try
             {
                 var songToDelete = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id, Array.Empty<string>());
-                return Ok(await _songRepository.DeleteAsync(songToDelete));
+                _ = await _songRepository.DeleteAsync(songToDelete);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
+            catch(Exception e) when(e is ArgumentNullException || e is NullReferenceException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
