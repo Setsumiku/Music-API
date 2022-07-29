@@ -12,40 +12,46 @@ namespace Music_API.Controllers
     public class MusicAPISongController : ControllerBase
     {
         private readonly IMapper _mapper;
-        //private readonly ILogger _logger;
+        private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
         private readonly IBaseRepository<Artist> _artistRepository;
-        private readonly IBaseRepository<Playlist> _playlistRepository;
         private readonly IBaseRepository<Album> _albumRepository;
-        private readonly IBaseRepository<Genre> _genreRepository;
 
-        public MusicAPISongController(IMapper mapper, IBaseRepository<Song> songRepository,
-            IBaseRepository<Playlist> playlistRepository, IBaseRepository<Album> albumRepository,
-            IBaseRepository<Genre> genreRepository, IBaseRepository<Artist> artistRepository)
+        public MusicAPISongController(IMapper mapper, ILogger<MusicAPISongController> logger, IBaseRepository<Song> songRepository,
+             IBaseRepository<Album> albumRepository, IBaseRepository<Artist> artistRepository)
         {
             _mapper = mapper;
-            //_logger = logger;
+            _logger = logger;
             _songRepository = songRepository;
             _artistRepository = artistRepository;
-            _playlistRepository = playlistRepository;
             _albumRepository = albumRepository;
-            _genreRepository = genreRepository;
         }
-
+        /// <summary>
+        /// Use to receive all Songs
+        /// </summary>
+        /// <returns>Songs</returns>
         // GET: api/<MusicAPIController>/songs
         [HttpGet("songs")]
         public async Task<IActionResult> Get()
             => Ok(_mapper.Map<IEnumerable<SongReadDto>>(await _songRepository.GetAllAsync(Array.Empty<string>())));
-
+        /// <summary>
+        /// Use to receive specific Song
+        /// </summary>
+        /// <param name="id">String for ID of Song</param>
+        /// <returns>Song</returns>
         // GET api/<MusicAPIController>/songs/{id}
         [HttpGet("songs/{id}")]
-        public async Task<IActionResult> Get(int id) //TODO: make separate GET and POST DTOs
+        public async Task<IActionResult> Get(int id)
         {
             var foundSong = await _songRepository.GetSingleByConditionAsync(song => song.SongId == id, Array.Empty<string>());
             return foundSong != null ? Ok(_mapper.Map<SongReadDto>(foundSong))
                                         : NotFound();
         }
-
+        /// <summary>
+        /// Use to Create a new Song
+        /// </summary>
+        /// <param name="songName">String for Song Description</param>
+        /// <returns>Created Song</returns>
         // POST api/<MusicAPIController>/songs
         [HttpPost("songs")]
         public async Task<IActionResult> Add([FromBody] string songName)
@@ -53,7 +59,12 @@ namespace Music_API.Controllers
             var savedSong = await _songRepository.CreateAsync(new Song() { SongDescription = songName });
             return Ok(_mapper.Map<SongReadDto>(savedSong));
         }
-
+        /// <summary>
+        /// Use to Edit Song
+        /// </summary>
+        /// <param name="id">String for ID of Song</param>
+        /// <param name="song">String for new name for the Song</param>
+        /// <returns>Updated Song</returns>
         // PUT api/<MusicAPIController>/songs/{id}
         [HttpPut("songs/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] SongDto song)
@@ -72,7 +83,11 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
-
+        /// <summary>
+        /// Use to Remove Song
+        /// </summary>
+        /// <param name="id">String for ID of Song</param>
+        /// <returns>Code for success or failure</returns>
         // DELETE api/<MusicAPIController>/songs/{id}
         [HttpDelete("songs/{id}")]
         public async Task<IActionResult> Delete(string id)

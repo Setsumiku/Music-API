@@ -2,6 +2,9 @@
 {
     public class GenreReadDto
     {
+        /// <summary>
+        /// Name of the Genre
+        /// </summary>
         public string GenreDescription { get; set; }
     }
 }

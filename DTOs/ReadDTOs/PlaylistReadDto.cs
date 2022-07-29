@@ -2,6 +2,9 @@
 {
     public class PlaylistReadDto
     {
+        /// <summary>
+        /// Name of the Playlist
+        /// </summary>
         public string PlaylistDescription { get; set; }
     }
 }

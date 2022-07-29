@@ -5,8 +5,6 @@ using Music_API.Data.DAL;
 using Music_API.Data.Model;
 using Music_API.DTOs;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace Music_API.Controllers
 {
     [Route("api/[controller]")]
@@ -14,40 +12,43 @@ namespace Music_API.Controllers
     public class MusicAPIPlaylistController : ControllerBase
     {
         private readonly IMapper _mapper;
-        //private readonly ILogger _logger;
+        private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
-        private readonly IBaseRepository<Artist> _artistRepository;
         private readonly IBaseRepository<Playlist> _playlistRepository;
-        private readonly IBaseRepository<Album> _albumRepository;
-        private readonly IBaseRepository<Genre> _genreRepository;
 
-        public MusicAPIPlaylistController(IMapper mapper, IBaseRepository<Song> songRepository,
-            IBaseRepository<Playlist> playlistRepository, IBaseRepository<Album> albumRepository,
-            IBaseRepository<Genre> genreRepository, IBaseRepository<Artist> artistRepository)
+        public MusicAPIPlaylistController(IMapper mapper, ILogger<MusicAPIPlaylistController> logger, IBaseRepository<Song> songRepository, IBaseRepository<Playlist> playlistRepository)
         {
             _mapper = mapper;
-            //_logger = logger;
+            _logger = logger;
             _songRepository = songRepository;
-            _artistRepository = artistRepository;
             _playlistRepository = playlistRepository;
-            _albumRepository = albumRepository;
-            _genreRepository = genreRepository;
         }
-
+        /// <summary>
+        /// Use to receive all Playlists
+        /// </summary>
+        /// <returns>Playlists</returns>
         // GET: api/<MusicAPIController>/playlists
         [HttpGet("playlists")]
         public async Task<IActionResult> Get()
             => Ok(_mapper.Map<IEnumerable<PlaylistReadDto>>(await _playlistRepository.GetAllAsync(new string[] { })));
-
+        /// <summary>
+        /// Use to receive specific Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <returns>Playlist</returns>
         // GET api/<MusicAPIController>/playlists/{id}
         [HttpGet("playlists/{id}")]
-        public async Task<IActionResult> Get(int id) //TODO: make separate GET and POST DTOs
+        public async Task<IActionResult> Get(int id)
         {
             var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, Array.Empty<string>());
             return foundPlaylist != null ? Ok(_mapper.Map<PlaylistReadDto>(foundPlaylist))
                                         : NotFound();
         }
-
+        /// <summary>
+        /// Use to Create a new Playlist
+        /// </summary>
+        /// <param name="playlistName">String for Playlist Description</param>
+        /// <returns>Created Playlist</returns>
         // POST api/<MusicAPIController>/playlists
         [HttpPost("playlists")]
         public async Task<IActionResult> Add([FromBody] string playlistName)
@@ -55,7 +56,12 @@ namespace Music_API.Controllers
             var savedPlaylist = await _playlistRepository.CreateAsync(new Playlist() { PlaylistDescription = playlistName });
             return Ok(_mapper.Map<PlaylistReadDto>(savedPlaylist));
         }
-
+        /// <summary>
+        /// Use to Edit Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <param name="playlist">String for new name for the Playlist</param>
+        /// <returns>Updated Playlist</returns>
         // PUT api/<MusicAPIController>/playlists/{id}
         [HttpPut("playlists/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] PlaylistDto playlist)
@@ -74,7 +80,11 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
-
+        /// <summary>
+        /// Use to Remove Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <returns>Code for success or failure</returns>
         // DELETE api/<MusicAPIController>/playlists/{id}
         [HttpDelete("playlists/{id}")]
         public async Task<IActionResult> Delete(string id)
@@ -89,6 +99,11 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+        /// <summary>
+        /// Use to Get songs from specific Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <returns>Songs from the Playlist</returns>
         // GET: api/<MusicAPIController>/playlists/{id}/songs
         [HttpGet("playlists/{id}/songs")]
         public async Task<IActionResult> GetPlaylistSongs(int id)
@@ -103,6 +118,12 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+        /// <summary>
+        /// Use to Get specific Song from specific Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <param name="id2">String for ID of Song</param>
+        /// <returns>Song from the Playlist</returns>
         // GET api/<MusicAPIController>/playlists/{id}/songs/{id}
         [HttpGet("playlists/{id}/songs/{id2}")]
         public async Task<IActionResult> GetSingleSongFromPlaylist(int id, int id2)
@@ -119,30 +140,12 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
-        // POST api/<MusicAPIController>/playlists/{id}/songs
-        [HttpPost("playlists/{id}/songs")]
-        public async Task<IActionResult> AddSong([FromBody] string songName)
-        {
-            var savedSong = await _songRepository.CreateAsync(new Song() { SongDescription = songName });
-            return Ok(_mapper.Map<SongReadDto>(savedSong));
-        }
-        // DELETE api/<MusicAPIController>/playlists/{id}/songs
-        [HttpDelete("playlists/{id}/songs")]
-        public async Task<IActionResult> DeleteSong([FromBody] string songName)
-        {
-            try
-            {
-                var songToDelete = await _songRepository.GetSingleByConditionAsync(song => song.SongDescription == songName, Array.Empty<string>());
-                _ = await _songRepository.DeleteAsync(songToDelete);
-                return Ok();
-            }
-            catch ( Exception ex) when(ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
-            {
-                return BadRequest();
-            }
-
-
-        }
+        /// <summary>
+        /// Use to Add specific song to a specific Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <param name="id2">String for ID of Song</param>
+        /// <returns>Updated Playlist</returns>
         // PUT api/<MusicAPIController>/playlists/{id}/songs/{id2}
         [HttpPut("playlists/{id}/songs/{id2}")]
         public async Task<IActionResult> PutSongToPlaylist(string id, string id2)
@@ -164,7 +167,12 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
-
+        /// <summary>
+        /// Use to Remove song from a Playlist
+        /// </summary>
+        /// <param name="id">String for ID of Playlist</param>
+        /// <param name="id2">String for ID of Song</param>
+        /// <returns>Code for success or failure</returns>
         // DELETE api/<MusicAPIController>/playlists/{id}/songs/{id2}
         [HttpDelete("playlists/{id}/songs/{id2}")]
         public async Task<IActionResult> DeleteSongFromPlaylist(string id, string id2)
