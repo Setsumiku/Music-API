@@ -51,7 +51,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Add([FromBody] string genreName)
         {
             var savedGenre = await _genreRepository.CreateAsync(new Genre() { GenreDescription = genreName });
-            return Ok(_mapper.Map<GenreReadDto>(savedGenre));
+            return Created("api/MusicAPIGenre/genres/" + savedGenre.GenreId, _mapper.Map<GenreReadDto>(savedGenre));
         }
         /// <summary>
         /// Use to Edit Genre
@@ -133,7 +133,7 @@ namespace Music_API.Controllers
             {
                 var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
                 var albumFromGenre = foundGenre.GenreAlbums[id2 - 1];
-                return foundGenre is not null ? Ok(_mapper.Map<GenreReadDto>(albumFromGenre))
+                return foundGenre is not null ? Ok(_mapper.Map<AlbumReadDto>(albumFromGenre))
                       : NotFound();
 
             }
@@ -152,7 +152,7 @@ namespace Music_API.Controllers
         [HttpPut("genres/{id}/albums/{id2}")]
         public async Task<IActionResult> PutAlbumToGenre(string id, string id2)
         {
-            var genreToAddAlbumTo = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreSongs" });
+            var genreToAddAlbumTo = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreAlbums" });
             if (genreToAddAlbumTo is null)
                 return NotFound();
             var albumToAdd = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id2, Array.Empty<string>());
