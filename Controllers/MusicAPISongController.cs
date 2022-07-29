@@ -11,17 +11,12 @@ namespace Music_API.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
-        private readonly IBaseRepository<Artist> _artistRepository;
-        private readonly IBaseRepository<Album> _albumRepository;
 
-        public MusicAPISongController(IMapper mapper, ILogger<MusicAPISongController> logger, IBaseRepository<Song> songRepository,
-             IBaseRepository<Album> albumRepository, IBaseRepository<Artist> artistRepository)
+        public MusicAPISongController(IMapper mapper, ILogger<MusicAPISongController> logger, IBaseRepository<Song> songRepository)
         {
             _mapper = mapper;
             _logger = logger;
             _songRepository = songRepository;
-            _artistRepository = artistRepository;
-            _albumRepository = albumRepository;
         }
         /// <summary>
         /// Use to receive all Songs
