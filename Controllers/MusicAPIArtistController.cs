@@ -67,7 +67,6 @@ namespace Music_API.Controllers
         {
             try
             {
-
                 artist.ArtistId = Int32.Parse(id);
             }
             catch (Exception ex) when (ex is FormatException)

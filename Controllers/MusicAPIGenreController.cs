@@ -13,14 +13,14 @@ namespace Music_API.Controllers
     {
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
-        private readonly IBaseRepository<Song> _songRepository;
+        private readonly IBaseRepository<Album> _albumRepository;
         private readonly IBaseRepository<Genre> _genreRepository;
 
-        public MusicAPIGenreController(IMapper mapper, ILogger<MusicAPIGenreController> logger, IBaseRepository<Song> songRepository, IBaseRepository<Genre> genreRepository)
+        public MusicAPIGenreController(IMapper mapper, ILogger<MusicAPIGenreController> logger, IBaseRepository<Album> albumRepository, IBaseRepository<Genre> genreRepository)
         {
             _mapper = mapper;
             _logger = logger;
-            _songRepository = songRepository;
+            _albumRepository = albumRepository;
             _genreRepository = genreRepository;
         }
         /// <summary>
@@ -106,18 +106,18 @@ namespace Music_API.Controllers
             }
         }
         /// <summary>
-        /// Use to Get songs from specific Genre
+        /// Use to Get albums from specific Genre
         /// </summary>
         /// <param name="id">String for ID of Genre</param>
-        /// <returns>Songs from the Genre</returns>
-        // GET: api/<MusicAPIController>/genres/{id}/songs
-        [HttpGet("genres/{id}/songs")]
-        public async Task<IActionResult> GetGenreSongs(int id)
+        /// <returns>Albums from the Genre</returns>
+        // GET: api/<MusicAPIController>/genres/{id}/albums
+        [HttpGet("genres/{id}/albums")]
+        public async Task<IActionResult> GetGenreAlbums(int id)
         {
             try
             {
-                var genreToUse = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreSongs" });
-                return Ok(_mapper.Map<IEnumerable<SongReadDto>>(genreToUse.GenreSongs));
+                var genreToUse = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
+                return Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(genreToUse.GenreAlbums));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -125,19 +125,19 @@ namespace Music_API.Controllers
             }
         }
         /// <summary>
-        /// Use to Get specific Song from specific Genre
+        /// Use to Get specific Album from specific Genre
         /// </summary>
         /// <param name="id">String for ID of Genre</param>
-        /// <param name="id2">String for ID of Song</param>
-        /// <returns>Song from the Genre</returns>
-        // GET api/<MusicAPIController>/genres/{id}/songs/{id2}
-        [HttpGet("genres/{id}/songs/{id2}")]
-        public async Task<IActionResult> GetSingleSongFromGenre(int id, int id2)
+        /// <param name="id2">String for ID of Album</param>
+        /// <returns>Album from the Genre</returns>
+        // GET api/<MusicAPIController>/genres/{id}/albums/{id2}
+        [HttpGet("genres/{id}/albums/{id2}")]
+        public async Task<IActionResult> GetSingleAlbumFromGenre(int id, int id2)
         {
             try
             {
-                var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreSongs" });
-                return foundGenre != null ? Ok(_mapper.Map<GenreReadDto>(foundGenre.GenreSongs[id2 - 1]))
+                var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
+                return foundGenre != null ? Ok(_mapper.Map<GenreReadDto>(foundGenre.GenreAlbums[id2 - 1]))
                                             : NotFound();
 
             }
@@ -147,26 +147,26 @@ namespace Music_API.Controllers
             }
         }
         /// <summary>
-        /// Use to Add specific song to a specific Genre
+        /// Use to Add specific Album to a specific Genre
         /// </summary>
         /// <param name="id">String for ID of Genre</param>
-        /// <param name="id2">String for ID of Song</param>
+        /// <param name="id2">String for ID of Album</param>
         /// <returns>Updated Genre</returns>
-        // PUT api/<MusicAPIController>/genres/{id}/songs/{id2}
-        [HttpPut("genres/{id}/songs/{id2}")]
-        public async Task<IActionResult> PutSongToGenre(string id, string id2)
+        // PUT api/<MusicAPIController>/genres/{id}/albums/{id2}
+        [HttpPut("genres/{id}/albums/{id2}")]
+        public async Task<IActionResult> PutAlbumToGenre(string id, string id2)
         {
-            var genreToAddSongTo = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreSongs" });
-            if (genreToAddSongTo is null)
+            var genreToAddAlbumTo = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreSongs" });
+            if (genreToAddAlbumTo is null)
                 return BadRequest();
-            var songToAdd = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id2, Array.Empty<string>());
-            if (songToAdd is null)
+            var albumToAdd = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id2, Array.Empty<string>());
+            if (albumToAdd is null)
                 return BadRequest();
             try
             {
-                genreToAddSongTo.GenreSongs.Add(songToAdd);
-                var updatedGenre = await _genreRepository.UpdateAsync(genreToAddSongTo);
-                return Ok(_mapper.Map<GenreDto>(genreToAddSongTo));
+                genreToAddAlbumTo.GenreAlbums.Add(albumToAdd);
+                var updatedGenre = await _genreRepository.UpdateAsync(genreToAddAlbumTo);
+                return Ok(_mapper.Map<GenreDto>(genreToAddAlbumTo));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -174,19 +174,19 @@ namespace Music_API.Controllers
             }
         }
         /// <summary>
-        /// Use to Remove song from a Genre
+        /// Use to Remove Album from a Genre
         /// </summary>
         /// <param name="id">String for ID of Genre</param>
-        /// <param name="id2">String for ID of Song</param>
+        /// <param name="id2">String for ID of Album</param>
         /// <returns>Code for success or failure</returns>
-        // DELETE api/<MusicAPIController>/genres/{id}/songs/{id2}
-        [HttpDelete("genres/{id}/songs/{id2}")]
-        public async Task<IActionResult> DeleteSongFromGenre(string id, string id2)
+        // DELETE api/<MusicAPIController>/genres/{id}/albums/{id2}
+        [HttpDelete("genres/{id}/albums/{id2}")]
+        public async Task<IActionResult> DeleteAlbumFromGenre(string id, string id2)
         {
             try
             {
-                var genreToDeleteFrom = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreSongs" });
-                genreToDeleteFrom.GenreSongs.RemoveAt(Int32.Parse(id2) - 1);
+                var genreToDeleteFrom = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, new string[] { "GenreAlbums" });
+                genreToDeleteFrom.GenreAlbums.RemoveAt(Int32.Parse(id2) - 1);
                 return genreToDeleteFrom != null ? Ok(_mapper.Map<GenreDto>(await _genreRepository.UpdateAsync(genreToDeleteFrom)))
                     : BadRequest();
             }

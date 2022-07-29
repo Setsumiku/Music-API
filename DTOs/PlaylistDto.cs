@@ -10,6 +10,6 @@ namespace Music_API.DTOs
         [StringLength(15, MinimumLength = 1)]
         public string PlaylistDescription { get; set; }
         
-        internal List<SongDto> PlaylistSongs { get; set; }
+        internal List<SongDto>? PlaylistSongs { get; set; }
     }
 }

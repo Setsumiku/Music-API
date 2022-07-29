@@ -9,7 +9,7 @@ namespace Music_API.Profiles
         public GenreProfiles()
         {
             CreateMap<Genre, GenreDto>()
-                .ForMember(genre => genre.GenreSongs, genreDto => genreDto.MapFrom(genre => genre.GenreSongs))
+                .ForMember(genre => genre.GenreAlbums, genreDto => genreDto.MapFrom(genre => genre.GenreAlbums))
                 .ForMember(genre => genre.GenreDescription, genreDto => genreDto.MapFrom(genre => genre.GenreDescription));
             CreateMap<Genre, GenreReadDto>()
             .ForMember(genre => genre.GenreDescription, genreDto => genreDto.MapFrom(genre => genre.GenreDescription));

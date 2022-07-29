@@ -13,6 +13,8 @@ namespace Music_API.Profiles
                 .ForMember(album => album.AlbumSongs, albumDto => albumDto.MapFrom(album => album.AlbumSongs));
             CreateMap<Album, AlbumReadDto>()
                 .ForMember(album => album.AlbumDescription, albumDto => albumDto.MapFrom(album => album.AlbumDescription));
+            CreateMap<AlbumReadDto, Album>()
+                .ForMember(album => album.AlbumDescription, albumDto => albumDto.MapFrom(album => album.AlbumDescription));
         }
     }
 }

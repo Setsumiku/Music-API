@@ -45,7 +45,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, Array.Empty<string>());
-            return foundAlbum != null ? Ok(_mapper.Map<AlbumReadDto>(foundAlbum))
+            return foundAlbum is not null ? Ok(_mapper.Map<AlbumReadDto>(foundAlbum))
                                         : NotFound();
         }
         /// <summary>
@@ -58,7 +58,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Add([FromBody] string albumName)
         {
             var savedAlbum = await _albumRepository.CreateAsync(new Album() { AlbumDescription = albumName });
-            return Ok(_mapper.Map<AlbumReadDto>(savedAlbum));
+            return Created("api/MusicAPIAlbum/albums/"+savedAlbum.AlbumId,_mapper.Map<AlbumReadDto>(savedAlbum));
         }
         /// <summary>
         /// Use to Edit Album
@@ -75,15 +75,15 @@ namespace Music_API.Controllers
                 var albumToUpdate = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, Array.Empty<string>());
                 if (albumToUpdate != null)
                 {
-                    var updatedAlbum = await _albumRepository.UpdateAsync(_mapper.Map<Album>(album));
-
-                    return Ok(_mapper.Map<AlbumDto>(updatedAlbum));
+                    albumToUpdate.AlbumDescription = album.AlbumDescription;
+                    _ = await _albumRepository.UpdateAsync(albumToUpdate);
+                    return Ok();
                 }
                 else return NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
-                return BadRequest();
+                return NotFound();
             }
         }
         /// <summary>
@@ -97,10 +97,11 @@ namespace Music_API.Controllers
         {
             try
             {
-                var albumToDelete = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, Array.Empty<string>());
-                return Ok(await _albumRepository.DeleteAsync(albumToDelete));
+                var albumToDelete = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, new string[] { "AlbumSongs"});
+                _ = await _albumRepository.DeleteAsync(albumToDelete);
+                return Ok();
             }
-            catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is NullReferenceException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -117,7 +118,8 @@ namespace Music_API.Controllers
             try
             {
                 var albumToUse = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
-                return Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs));
+                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs)) : 
+                    NotFound();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -137,9 +139,9 @@ namespace Music_API.Controllers
             try
             {
                 var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
-                return foundAlbum != null ? Ok(_mapper.Map<SongReadDto>(foundAlbum.AlbumSongs[id2 - 1]))
-                                            : NotFound();
-
+                var songFromAlbum = foundAlbum.AlbumSongs[id2 - 1];
+                return (foundAlbum is not null) ? Ok(_mapper.Map<SongReadDto>(songFromAlbum)) 
+                    : NotFound();
             }
             catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
@@ -158,17 +160,15 @@ namespace Music_API.Controllers
         {
             var albumToAddSongTo = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, new string[] { "AlbumSongs" });
             if (albumToAddSongTo is null)
-                return BadRequest();
+                return NotFound();
             var songToAdd = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id2, Array.Empty<string>());
             if (songToAdd is null)
-                return BadRequest();
+                return NotFound();
             try
             {
-                songToAdd.SongAlbum = albumToAddSongTo;
                 albumToAddSongTo.AlbumSongs.Add(songToAdd);
-                _ = await _songRepository.UpdateAsync(songToAdd);
                 var updatedAlbum = await _albumRepository.UpdateAsync(albumToAddSongTo);
-                return Ok(_mapper.Map<AlbumDto>(albumToAddSongTo));
+                return Ok();
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -188,9 +188,10 @@ namespace Music_API.Controllers
             try
             {
                 var albumToDeleteFrom = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, new string[] { "AlbumSongs" });
+                if (albumToDeleteFrom is null) return NotFound();
                 albumToDeleteFrom.AlbumSongs.RemoveAt(Int32.Parse(id2) - 1);
-                return albumToDeleteFrom != null ? Ok(_mapper.Map<AlbumDto>(await _albumRepository.UpdateAsync(albumToDeleteFrom)))
-                    : BadRequest();
+                _ = await _albumRepository.UpdateAsync(albumToDeleteFrom);
+                return Ok();
             }
             catch (Exception e) when (e is ArgumentNullException || e is ArgumentOutOfRangeException || e is FormatException || e is DbUpdateConcurrencyException)
             {
