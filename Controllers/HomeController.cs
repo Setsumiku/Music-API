@@ -4,9 +4,9 @@
     [Route("api")]
     public class HomeController : ControllerBase
     {
+        private readonly LinkGenerator _linkGenerator;
         private readonly ILogger<HomeController> _logger;
         private readonly IMapper _mapper;
-        private readonly LinkGenerator _linkGenerator;
 
         public HomeController(ILogger<HomeController> logger, LinkGenerator linkGenerator, IMapper mapper)
         {
