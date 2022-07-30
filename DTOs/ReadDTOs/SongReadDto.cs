@@ -1,7 +1,10 @@
-﻿namespace Music_API.DTOs
+﻿using Music_API.Entities;
+
+namespace Music_API.DTOs
 {
-    public class SongReadDto
+    public class SongReadDto : Entity
     {
+        internal int SongId { get; set; }
         /// <summary>
         /// Name of the Song
         /// </summary>

@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
+using Music_API.Entities;
+using Newtonsoft.Json;
 
 namespace Music_API.Controllers
 {
@@ -12,13 +15,16 @@ namespace Music_API.Controllers
         private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
         private readonly IBaseRepository<Playlist> _playlistRepository;
+        private readonly LinkGenerator _linkGenerator;
 
-        public MusicAPIPlaylistController(IMapper mapper, ILogger<MusicAPIPlaylistController> logger, IBaseRepository<Song> songRepository, IBaseRepository<Playlist> playlistRepository)
+        public MusicAPIPlaylistController(IMapper mapper, ILogger<MusicAPIPlaylistController> logger, LinkGenerator linkGenerator, 
+            IBaseRepository<Song> songRepository, IBaseRepository<Playlist> playlistRepository)
         {
             _mapper = mapper;
             _logger = logger;
             _songRepository = songRepository;
             _playlistRepository = playlistRepository;
+            _linkGenerator = linkGenerator;
         }
         /// <summary>
         /// Use to receive all Playlists
@@ -27,7 +33,17 @@ namespace Music_API.Controllers
         // GET: api/<MusicAPIController>/playlists
         [HttpGet("playlists")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<PlaylistReadDto>>(await _playlistRepository.GetAllAsync(Array.Empty<string>())));
+        {
+            var playlists = _mapper.Map<IEnumerable<PlaylistReadDto>>(await _playlistRepository.GetAllAsync(Array.Empty<string>()));
+            for (var index = 0; index < playlists.Count(); index++)
+            {
+                playlists.ElementAt(index).Add("Name", new { playlists.ElementAt(index).PlaylistDescription });
+                var playlistLinks = CreateLinksForPlaylist(playlists.ElementAt(index).PlaylistId);
+                playlists.ElementAt(index).Add("Links", playlistLinks);
+            }
+            var playlistsWrapper = new LinkCollectionWrapper<PlaylistReadDto>(playlists);
+            return Ok(CreateLinksForPlaylists(playlistsWrapper));
+        }
         /// <summary>
         /// Use to receive specific Playlist
         /// </summary>
@@ -38,8 +54,14 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, Array.Empty<string>());
-            return foundPlaylist is not null ? Ok(_mapper.Map<PlaylistReadDto>(foundPlaylist))
-                                        : NotFound();
+            if(foundPlaylist is null) return NotFound();
+            var mappedPlaylist = _mapper.Map<PlaylistReadDto>(foundPlaylist);
+            mappedPlaylist.Add("Name", new { mappedPlaylist.PlaylistDescription });
+            var songLink = new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetPlaylistSongs), values: new { id }),
+                "get_playlist_songs",
+                "GET");
+            mappedPlaylist.Add("Links", CreateLinksForPlaylist(foundPlaylist.PlaylistId, "" , songLink));
+            return Ok(mappedPlaylist);
         }
         /// <summary>
         /// Use to Create a new Playlist
@@ -61,14 +83,14 @@ namespace Music_API.Controllers
         /// <returns>Updated Playlist</returns>
         // PUT api/<MusicAPIController>/playlists/{id}
         [HttpPut("playlists/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] PlaylistReadDto playlist)
+        public async Task<IActionResult> Update(string id, [FromBody] string playlistName)
         {
             try
             {
                 var playlistToUpdate = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId.ToString() == id, Array.Empty<string>());
                 if (playlistToUpdate != null)
                 {
-                    playlistToUpdate.PlaylistDescription = playlist.PlaylistDescription;
+                    playlistToUpdate.PlaylistDescription = playlistName;
                     _ = await _playlistRepository.UpdateAsync(playlistToUpdate);
                     return Ok();
                 }
@@ -111,8 +133,16 @@ namespace Music_API.Controllers
             try
             {
                 var playlistToUse = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, new string[] { "PlaylistSongs" });
-                return playlistToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(playlistToUse.PlaylistSongs))
-                    : NotFound();
+                if (playlistToUse is null) return NotFound();
+                var songList = _mapper.Map<IEnumerable<SongReadDto>>(playlistToUse.PlaylistSongs);
+                for (var index = 0; index < songList.Count(); index++)
+                {
+                    songList.ElementAt(index).Add("Name", new { songList.ElementAt(index).SongDescription });
+                    var songLinks = CreateLinksForSong(id, index+1);
+                    songList.ElementAt(index).Add("Links", songLinks);
+                }
+                var songsWrapper = new LinkCollectionWrapper<SongReadDto>(songList);
+                return Ok(CreateLinksForSongs(songsWrapper));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -132,9 +162,12 @@ namespace Music_API.Controllers
             try
             {
                 var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, new string[] { "PlaylistSongs" });
+                if(foundPlaylist is null) return NotFound();
                 var songFromPlaylist = foundPlaylist.PlaylistSongs[id2 - 1];
-                return foundPlaylist is not null ? Ok(_mapper.Map<SongReadDto>(songFromPlaylist))
-                       : NotFound();
+                var mappedSong = _mapper.Map<SongReadDto>(songFromPlaylist);
+                mappedSong.Add("Name", new { mappedSong.SongDescription });
+                mappedSong.Add("Links", CreateLinksForSong(id, id2));
+                return Ok(mappedSong);
             }
             catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is OverflowException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
@@ -191,6 +224,64 @@ namespace Music_API.Controllers
             {
                 return NotFound();
             }
+        }
+
+        private IEnumerable<Link> CreateLinksForPlaylist(int id, string fields = "", Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { id, fields }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Delete), values: new { id }),
+                "delete_playlist",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Update), values: new { id }),
+                "update_playlist",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+        private IEnumerable<Link> CreateLinksForSong(int id, int id2, Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetSingleSongFromPlaylist), values: new { id, id2 }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(DeleteSongFromPlaylist), values: new { id, id2 }),
+                "remove_song_from_playlist",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(PutSongToPlaylist), values: new { id, id2 }),
+                "add_existing_song_to_playlist",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+
+        private LinkCollectionWrapper<PlaylistReadDto> CreateLinksForPlaylists(LinkCollectionWrapper<PlaylistReadDto> playlistsWrapper)
+        {
+            playlistsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { }),
+                    "self",
+                    "GET"));
+
+            return playlistsWrapper;
+        }
+        private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
+        {
+            songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetPlaylistSongs), values: new { }),
+                    "self",
+                    "GET"));
+
+            return songsWrapper;
         }
     }
 }
