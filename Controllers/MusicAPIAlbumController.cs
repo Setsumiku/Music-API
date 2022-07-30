@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
+using Music_API.Entities;
 
 namespace Music_API.Controllers
 {
@@ -12,13 +13,15 @@ namespace Music_API.Controllers
         private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
         private readonly IBaseRepository<Album> _albumRepository;
+        private readonly LinkGenerator _linkGenerator;
 
-        public MusicAPIAlbumController(IMapper mapper, ILogger<MusicAPIAlbumController> logger, IBaseRepository<Song> songRepository, IBaseRepository<Album> albumRepository)
+        public MusicAPIAlbumController(IMapper mapper, LinkGenerator linkGenerator, ILogger<MusicAPIAlbumController> logger, IBaseRepository<Song> songRepository, IBaseRepository<Album> albumRepository)
         {
             _mapper = mapper;
             _logger = logger;
             _songRepository = songRepository;
             _albumRepository = albumRepository;
+            _linkGenerator = linkGenerator;
         }
         /// <summary>
         /// Use to receive all Albums
@@ -27,8 +30,17 @@ namespace Music_API.Controllers
         // GET: api/<MusicAPIController>/albums
         [HttpGet("albums")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(await _albumRepository.GetAllAsync(Array.Empty<string>())));
-
+        {
+            var albums = _mapper.Map<IEnumerable<AlbumReadDto>>(await _albumRepository.GetAllAsync(Array.Empty<string>()));
+            for (var index = 0; index < albums.Count(); index++)
+            {
+                albums.ElementAt(index).Add("Name", new { albums.ElementAt(index).AlbumDescription });
+                var albumLinks = CreateLinksForAlbum(albums.ElementAt(index).AlbumId);
+                albums.ElementAt(index).Add("Links", albumLinks);
+            }
+            var albumsWrapper = new LinkCollectionWrapper<AlbumReadDto>(albums);
+            return Ok(CreateLinksForPlaylists(albumsWrapper));
+        }
         /// <summary>
         /// Use to receive specific Album
         /// </summary>
@@ -39,8 +51,14 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, Array.Empty<string>());
-            return foundAlbum is not null ? Ok(_mapper.Map<AlbumReadDto>(foundAlbum))
-                                        : NotFound();
+            if (foundAlbum is null) return NotFound();
+            var mappedAlbum = _mapper.Map<AlbumReadDto>(foundAlbum);
+            mappedAlbum.Add("Name", new { mappedAlbum.AlbumDescription });
+            var songLink = new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetAlbumSongs), values: new { id }),
+                "get_album_songs",
+                "GET");
+            mappedAlbum.Add("Links", CreateLinksForAlbum(foundAlbum.AlbumId, "", songLink));
+            return Ok(mappedAlbum);
         }
         /// <summary>
         /// Use to Create a new Album
@@ -62,14 +80,14 @@ namespace Music_API.Controllers
         /// <returns>Updated Album</returns>
         // PUT api/<MusicAPIController>/albums/{id}
         [HttpPut("albums/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] AlbumReadDto album)
+        public async Task<IActionResult> Update(string id, [FromBody] string albumName)
         {
             try
             {
                 var albumToUpdate = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId.ToString() == id, Array.Empty<string>());
                 if (albumToUpdate is not null)
                 {
-                    albumToUpdate.AlbumDescription = album.AlbumDescription;
+                    albumToUpdate.AlbumDescription = albumName;
                     _ = await _albumRepository.UpdateAsync(albumToUpdate);
                     return Ok();
                 }
@@ -112,8 +130,16 @@ namespace Music_API.Controllers
             try
             {
                 var albumToUse = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
-                return albumToUse is not null ? Ok(_mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs))
-                    : NotFound();
+                if (albumToUse is null) return NotFound();
+                var songList = _mapper.Map<IEnumerable<SongReadDto>>(albumToUse.AlbumSongs);
+                for (var index = 0; index < songList.Count(); index++)
+                {
+                    songList.ElementAt(index).Add("Name", new { songList.ElementAt(index).SongDescription });
+                    var songLinks = CreateLinksForSong(id, index + 1);
+                    songList.ElementAt(index).Add("Links", songLinks);
+                }
+                var songsWrapper = new LinkCollectionWrapper<SongReadDto>(songList);
+                return Ok(CreateLinksForSongs(songsWrapper));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -133,11 +159,14 @@ namespace Music_API.Controllers
             try
             {
                 var foundAlbum = await _albumRepository.GetSingleByConditionAsync(album => album.AlbumId == id, new string[] { "AlbumSongs" });
+                if (foundAlbum is null) return NotFound();
                 var songFromAlbum = foundAlbum.AlbumSongs[id2 - 1];
-                return foundAlbum is not null ? Ok(_mapper.Map<SongReadDto>(songFromAlbum))
-                    : NotFound();
+                var mappedSong = _mapper.Map<SongReadDto>(songFromAlbum);
+                mappedSong.Add("Name", new { mappedSong.SongDescription });
+                mappedSong.Add("Links", CreateLinksForSong(id, id2));
+                return Ok(mappedSong);
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
+            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is OverflowException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -193,5 +222,63 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+        private IEnumerable<Link> CreateLinksForAlbum(int id, string fields = "", Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { id, fields }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Delete), values: new { id }),
+                "delete_album",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Update), values: new { id }),
+                "update_album",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+        private IEnumerable<Link> CreateLinksForSong(int id, int id2, Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetSingleSongFromAlbum), values: new { id, id2 }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(DeleteSongFromAlbum), values: new { id, id2 }),
+                "remove_song_from_album",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(PutSongToAlbum), values: new { id, id2 }),
+                "add_existing_song_to_album",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+
+        private LinkCollectionWrapper<AlbumReadDto> CreateLinksForPlaylists(LinkCollectionWrapper<AlbumReadDto> albumWrapper)
+        {
+            albumWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { }),
+                    "self",
+                    "GET"));
+
+            return albumWrapper;
+        }
+        private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
+        {
+            songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetAlbumSongs), values: new { }),
+                    "self",
+                    "GET"));
+
+            return songsWrapper;
+        }
+
     }
 }

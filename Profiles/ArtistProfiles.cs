@@ -1,6 +1,4 @@
-﻿using AutoMapper;
-using Music_API.Data.Model;
-using Music_API.DTOs;
+﻿using Music_API.Data.Model;
 
 namespace Music_API.Profiles
 {
@@ -11,6 +9,8 @@ namespace Music_API.Profiles
             CreateMap<Artist, ArtistReadDto>()
                 .ForMember(artist => artist.ArtistDescription, artistDto => artistDto.MapFrom(artist => artist.ArtistDescription))
                 .ForMember(artist => artist.ArtistId, artistDto => artistDto.MapFrom(artist => artist.ArtistId));
+            CreateMap<ArtistReadDto, Artist>()
+                .ForMember(artistDto => artistDto.ArtistDescription, artist => artist.MapFrom(artistDto => artistDto.ArtistDescription));
         }
     }
 }
