@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
+using Music_API.Entities;
 
 namespace Music_API.Controllers
 {
@@ -12,13 +13,15 @@ namespace Music_API.Controllers
         private readonly ILogger _logger;
         private readonly IBaseRepository<Album> _albumRepository;
         private readonly IBaseRepository<Genre> _genreRepository;
+        private readonly LinkGenerator _linkGenerator;
 
-        public MusicAPIGenreController(IMapper mapper, ILogger<MusicAPIGenreController> logger, IBaseRepository<Album> albumRepository, IBaseRepository<Genre> genreRepository)
+        public MusicAPIGenreController(IMapper mapper, LinkGenerator linkGenerator, ILogger<MusicAPIGenreController> logger, IBaseRepository<Album> albumRepository, IBaseRepository<Genre> genreRepository)
         {
             _mapper = mapper;
             _logger = logger;
             _albumRepository = albumRepository;
             _genreRepository = genreRepository;
+            _linkGenerator = linkGenerator;
         }
         /// <summary>
         /// Use to receive all Genres
@@ -27,7 +30,18 @@ namespace Music_API.Controllers
         // GET: api/<MusicAPIController>/genres
         [HttpGet("genres")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<GenreReadDto>>(await _genreRepository.GetAllAsync(Array.Empty<string>())));
+        {
+            var genres = _mapper.Map<IEnumerable<GenreReadDto>>(await _genreRepository.GetAllAsync(Array.Empty<string>()));
+            for (var index = 0; index < genres.Count(); index++)
+            {
+                genres.ElementAt(index).Add("Name", new { genres.ElementAt(index).GenreDescription });
+                var genreLinks = CreateLinksForGenre(genres.ElementAt(index).GenreId);
+                genres.ElementAt(index).Add("Links", genreLinks);
+            }
+            var genresWrapper = new LinkCollectionWrapper<GenreReadDto>(genres);
+            return Ok(CreateLinksForGenres(genresWrapper));
+
+        }
         /// <summary>
         /// Use to receive specific Genre
         /// </summary>
@@ -38,8 +52,14 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, Array.Empty<string>());
-            return foundGenre != null ? Ok(_mapper.Map<GenreReadDto>(foundGenre))
-                                        : NotFound();
+            if (foundGenre is null) return NotFound();
+            var mappedGenre = _mapper.Map<GenreReadDto>(foundGenre);
+            mappedGenre.Add("Name", new { mappedGenre.GenreDescription });
+            var albumLink = new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetGenreAlbums), values: new { id }),
+                "get_genre_albums",
+                "GET");
+            mappedGenre.Add("Links", CreateLinksForGenre(foundGenre.GenreId, "", albumLink));
+            return Ok(mappedGenre);
         }
         /// <summary>
         /// Use to Create a new Genre
@@ -61,14 +81,14 @@ namespace Music_API.Controllers
         /// <returns>Updated Genre</returns>
         // PUT api/<MusicAPIController>/genres/{id}
         [HttpPut("genres/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] GenreReadDto genre)
+        public async Task<IActionResult> Update(string id, [FromBody] string genreName)
         {
             try
             {
                 var genreToUpdate = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId.ToString() == id, Array.Empty<string>());
                 if (genreToUpdate != null)
                 {
-                    genreToUpdate.GenreDescription = genre.GenreDescription;
+                    genreToUpdate.GenreDescription = genreName;
                     _ = await _genreRepository.UpdateAsync(genreToUpdate);
                     return Ok();
                 }
@@ -111,8 +131,16 @@ namespace Music_API.Controllers
             try
             {
                 var genreToUse = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
-                return genreToUse is not null ? Ok(_mapper.Map<IEnumerable<AlbumReadDto>>(genreToUse.GenreAlbums))
-                    : NotFound();
+                if (genreToUse is null) return NotFound();
+                var albumList = _mapper.Map<IEnumerable<AlbumReadDto>>(genreToUse.GenreAlbums);
+                for (var index = 0; index < albumList.Count(); index++)
+                {
+                    albumList.ElementAt(index).Add("Name", new { albumList.ElementAt(index).AlbumDescription });
+                    var albumLinks = CreateLinksForAlbum(id, index + 1);
+                    albumList.ElementAt(index).Add("Links", albumLinks);
+                }
+                var albumsWrapper = new LinkCollectionWrapper<AlbumReadDto>(albumList);
+                return Ok(CreateLinksForAlbums(albumsWrapper));
             }
             catch (Exception e) when (e is ArgumentNullException || e is DbUpdateConcurrencyException)
             {
@@ -132,12 +160,14 @@ namespace Music_API.Controllers
             try
             {
                 var foundGenre = await _genreRepository.GetSingleByConditionAsync(genre => genre.GenreId == id, new string[] { "GenreAlbums" });
+                if (foundGenre is null) return NotFound();
                 var albumFromGenre = foundGenre.GenreAlbums[id2 - 1];
-                return foundGenre is not null ? Ok(_mapper.Map<AlbumReadDto>(albumFromGenre))
-                      : NotFound();
-
+                var mappedAlbum = _mapper.Map<AlbumReadDto>(albumFromGenre);
+                mappedAlbum.Add("Name", new { mappedAlbum.AlbumDescription });
+                mappedAlbum.Add("Links", CreateLinksForAlbum(id, id2));
+                return Ok(mappedAlbum);
             }
-            catch (Exception ex) when (ex is ArgumentNullException || ex is OverflowException || ex is ArgumentOutOfRangeException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
+            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is OverflowException || ex is NullReferenceException || ex is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
@@ -192,6 +222,63 @@ namespace Music_API.Controllers
             {
                 return NotFound();
             }
+        }
+
+        private IEnumerable<Link> CreateLinksForGenre(int id, string fields = "", Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { id, fields }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Delete), values: new { id }),
+                "delete_genre",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Update), values: new { id }),
+                "update_genre",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+        private IEnumerable<Link> CreateLinksForAlbum(int id, int id2, Link optional = null)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetSingleAlbumFromGenre), values: new { id, id2 }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(DeleteAlbumFromGenre), values: new { id, id2 }),
+                "remove_album_from_genre",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(PutAlbumToGenre), values: new { id, id2 }),
+                "add_existing_album_to_genre",
+                "PUT")
+            };
+            if (optional is not null) links.Add(optional);
+
+            return links;
+        }
+        private LinkCollectionWrapper<GenreReadDto> CreateLinksForGenres(LinkCollectionWrapper<GenreReadDto> genresWrapper)
+        {
+            genresWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { }),
+                    "self",
+                    "GET"));
+
+            return genresWrapper;
+        }
+        private LinkCollectionWrapper<AlbumReadDto> CreateLinksForAlbums(LinkCollectionWrapper<AlbumReadDto> albumsWrapper)
+        {
+            albumsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetGenreAlbums), values: new { }),
+                    "self",
+                    "GET"));
+
+            return albumsWrapper;
         }
     }
 }
