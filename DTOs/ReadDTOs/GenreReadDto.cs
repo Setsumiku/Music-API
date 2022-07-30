@@ -1,7 +1,10 @@
-﻿namespace Music_API.DTOs
+﻿using Music_API.Entities;
+
+namespace Music_API.DTOs
 {
-    public class GenreReadDto
+    public class GenreReadDto : Entity
     {
+        internal int GenreId { get; set; }
         /// <summary>
         /// Name of the Genre
         /// </summary>

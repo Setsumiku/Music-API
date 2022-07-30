@@ -1,6 +1,4 @@
-﻿using AutoMapper;
-using Music_API.Data.Model;
-using Music_API.DTOs;
+﻿using Music_API.Data.Model;
 
 namespace Music_API.Profiles
 {
@@ -8,11 +6,9 @@ namespace Music_API.Profiles
     {
         public GenreProfiles()
         {
-            CreateMap<Genre, GenreDto>()
-                .ForMember(genre => genre.GenreAlbums, genreDto => genreDto.MapFrom(genre => genre.GenreAlbums))
-                .ForMember(genre => genre.GenreDescription, genreDto => genreDto.MapFrom(genre => genre.GenreDescription));
             CreateMap<Genre, GenreReadDto>()
-            .ForMember(genre => genre.GenreDescription, genreDto => genreDto.MapFrom(genre => genre.GenreDescription));
+            .ForMember(genre => genre.GenreDescription, genreDto => genreDto.MapFrom(genre => genre.GenreDescription))
+            .ForMember(genre => genre.GenreId, genreDto => genreDto.MapFrom(genre => genre.GenreId));
         }
     }
 }

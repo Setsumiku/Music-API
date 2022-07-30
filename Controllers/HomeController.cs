@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.Extensions.Logging;
-using AutoMapper;
+﻿using Music_API.Entities;
 
 namespace Music_API.Controllers
 {
@@ -10,22 +7,47 @@ namespace Music_API.Controllers
     public class HomeController : ControllerBase
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IMapper _mapper;
+        private readonly LinkGenerator _linkGenerator;
 
-        public HomeController(ILogger<HomeController> logger, IActionDescriptorCollectionProvider actionDescriptorCollectionProvider, IMapper mapper)
+        public HomeController(ILogger<HomeController> logger, LinkGenerator linkGenerator, IMapper mapper)
         {
             _logger = logger;
+            _mapper = mapper;
+            _linkGenerator = linkGenerator;
         }
-        //[HttpGet(Name = nameof(GetRoot))]
-        //public IActionResult GetRoot()
-        //{
-        //    RootModel rootModel = new RootModel();
-        //    rootModel.Links.Add(
-        //        UrlLink("playlists", "/MusicAPIPlaylist/Get", null));
+        [HttpGet]
+        public IActionResult GetRoot()
+        {
+            return Ok(CreateLinksForHomeController());
+        }
 
-        //    //rootModel.Links.Add(
-        //    //    UrlLink("clients", "GetClients", null));
+        private IEnumerable<Link> CreateLinksForHomeController()
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPIAlbumController.Get), controller : "MusicAPIAlbum"),
+                "album_controller",
+                "GET"),
 
-        //    return Ok(rootModel);
-        //}
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPIArtistController.Get), controller:"MusicAPIArtist"),
+                "artist_controller",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPIPlaylistController.Get), controller:"MusicAPIPlaylist"),
+                "playlist_controller",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPISongController.Get), controller:"MusicAPISong"),
+                "song_controller",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPIGenreController.Get), controller:"MusicAPIGenre"),
+                "genre_controller",
+                "GET")
+            };
+
+            return links;
+        }
     }
 }

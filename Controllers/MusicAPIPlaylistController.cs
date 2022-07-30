@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
 using Music_API.Entities;
-using Newtonsoft.Json;
 
 namespace Music_API.Controllers
 {
