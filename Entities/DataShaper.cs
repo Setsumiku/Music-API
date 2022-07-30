@@ -1,7 +1,4 @@
-﻿using Music_Api.Entities;
-using System.Reflection;
-
-namespace Music_API.Entities
+﻿namespace Music_API.Entities
 {
     public class DataShaper<T> : IDataShaper<T>
     {

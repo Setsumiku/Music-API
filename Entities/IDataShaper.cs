@@ -1,4 +1,4 @@
-﻿namespace Music_Api.Entities
+﻿namespace Music_API.Entities
 {
     public interface IDataShaper<T>
     {

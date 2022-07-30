@@ -1,12 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Music_API.Data.Context;
-using Music_API.Data.DAL;
 using Serilog;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers().AddControllersAsServices();
 builder.Services.AddEndpointsApiExplorer();
@@ -26,13 +21,11 @@ var connectionString = builder.Configuration.GetConnectionString("Music_API_Db")
 builder.Services.AddDbContext<Music_API_Context>(options => options.UseSqlServer(connectionString));
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-var logger = new LoggerConfiguration().WriteTo.File(builder.Configuration.GetValue<string>("Logging:FilePath")).CreateLogger();
-builder.Logging.ClearProviders();
-builder.Logging.AddSerilog(logger);
+
+SetupLogging(builder);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -49,3 +42,10 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static void SetupLogging(WebApplicationBuilder builder)
+{
+    var logger = new LoggerConfiguration().WriteTo.File(builder.Configuration.GetValue<string>("Logging:FilePath")).CreateLogger();
+    builder.Logging.ClearProviders();
+    builder.Logging.AddSerilog(logger);
+}

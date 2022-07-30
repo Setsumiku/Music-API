@@ -1,6 +1,4 @@
-﻿using Music_API.Data.Model;
-
-namespace Music_API.Profiles
+﻿namespace Music_API.Profiles
 {
     public class ArtistProfiles : Profile
     {

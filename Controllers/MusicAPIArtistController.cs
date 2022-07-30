@@ -1,9 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Music_API.Data.DAL;
-using Music_API.Data.Model;
-using Music_API.Entities;
-
-namespace Music_API.Controllers
+﻿namespace Music_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

@@ -1,6 +1,4 @@
-﻿using Music_API.Entities;
-
-namespace Music_API.Controllers
+﻿namespace Music_API.Controllers
 {
     [ApiController]
     [Route("api")]

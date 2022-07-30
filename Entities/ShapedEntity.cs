@@ -1,6 +1,4 @@
-﻿using Music_API.Entities;
-
-namespace Music_Api.Entities
+﻿namespace Music_API.Entities
 {
     public class ShapedEntity
     {
