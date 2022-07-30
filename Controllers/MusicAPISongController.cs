@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Music_API.Data.DAL;
 using Music_API.Data.Model;
+using Music_API.Entities;
 
 namespace Music_API.Controllers
 {
@@ -11,12 +12,14 @@ namespace Music_API.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IBaseRepository<Song> _songRepository;
+        private readonly LinkGenerator _linkGenerator;
 
-        public MusicAPISongController(IMapper mapper, ILogger<MusicAPISongController> logger, IBaseRepository<Song> songRepository)
+        public MusicAPISongController(IMapper mapper, LinkGenerator linkGenerator, ILogger<MusicAPISongController> logger, IBaseRepository<Song> songRepository)
         {
             _mapper = mapper;
             _logger = logger;
             _songRepository = songRepository;
+            _linkGenerator = linkGenerator;
         }
         /// <summary>
         /// Use to receive all Songs
@@ -25,7 +28,18 @@ namespace Music_API.Controllers
         // GET: api/<MusicAPIController>/songs
         [HttpGet("songs")]
         public async Task<IActionResult> Get()
-            => Ok(_mapper.Map<IEnumerable<SongReadDto>>(await _songRepository.GetAllAsync(Array.Empty<string>())));
+        {
+            var songs = _mapper.Map<IEnumerable<SongReadDto>>(await _songRepository.GetAllAsync(Array.Empty<string>()));
+            for(var index = 0; index < songs.Count(); index++)
+            {
+                songs.ElementAt(index).Add("Name", new { songs.ElementAt(index).SongDescription });
+                var songLinks = CreateLinksForSong(songs.ElementAt(index).SongId);
+                songs.ElementAt(index).Add("Links", songLinks);
+            }
+            var songsWrapper = new LinkCollectionWrapper<SongReadDto>(songs);
+            return Ok(CreateLinksForSongs(songsWrapper));
+
+        }
         /// <summary>
         /// Use to receive specific Song
         /// </summary>
@@ -36,8 +50,11 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundSong = await _songRepository.GetSingleByConditionAsync(song => song.SongId == id, Array.Empty<string>());
-            return foundSong is not null ? Ok(_mapper.Map<SongReadDto>(foundSong))
-                                        : NotFound();
+            if (foundSong is null) return NotFound();
+            var mappedSong = _mapper.Map<SongReadDto>(foundSong);
+            mappedSong.Add("Name", new { mappedSong.SongDescription });
+            mappedSong.Add("Links", CreateLinksForSong(foundSong.SongId));
+            return Ok(mappedSong);
         }
         /// <summary>
         /// Use to Create a new Song
@@ -59,14 +76,14 @@ namespace Music_API.Controllers
         /// <returns>Updated Song</returns>
         // PUT api/<MusicAPIController>/songs/{id}
         [HttpPut("songs/{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] SongReadDto song)
+        public async Task<IActionResult> Update(string id, [FromBody] string songName)
         {
             try
             {
                 var songToUpdate = await _songRepository.GetSingleByConditionAsync(song => song.SongId.ToString() == id, Array.Empty<string>());
                 if (songToUpdate is not null)
                 {
-                    songToUpdate.SongDescription = song.SongDescription;
+                    songToUpdate.SongDescription = songName;
                     _ = await _songRepository.UpdateAsync(songToUpdate);
                     return Ok();
                 }
@@ -96,6 +113,34 @@ namespace Music_API.Controllers
             {
                 return NotFound();
             }
+        }
+        private IEnumerable<Link> CreateLinksForSong(int id)
+        {
+            var links = new List<Link>
+            {
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { id }),
+                "self",
+                "GET"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Delete), values: new { id }),
+                "remove_song",
+                "DELETE"),
+
+                new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Update), values: new { id }),
+                "edit_song",
+                "PUT")
+            };
+            return links;
+        }
+        private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
+        {
+            songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get)),
+                    "self",
+                    "GET"));
+            songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Add)),
+                "add_new_song",
+                "POST"));
+            return songsWrapper;
         }
     }
 }
