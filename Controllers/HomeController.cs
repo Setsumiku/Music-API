@@ -43,6 +43,9 @@
 
                 new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(MusicAPIGenreController.Get), controller:"MusicAPIGenre"),
                 "genre_controller",
+                "GET"),
+                new Link(_linkGenerator.GetUriByAction(HttpContext, action : nameof(TokenController.Post), controller:"Token"),
+                "login_controller",
                 "GET")
             };
 

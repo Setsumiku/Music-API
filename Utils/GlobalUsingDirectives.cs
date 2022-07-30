@@ -6,3 +6,4 @@ global using Music_API.Data.Model;
 global using Music_API.DTOs;
 global using Music_API.Entities;
 global using System.Reflection;
+global using Microsoft.AspNetCore.Authorization;

@@ -1,5 +1,6 @@
 ﻿namespace Music_API.Controllers
 {
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [Route("api/[controller]")]
     [ApiController]
     public class MusicAPIAlbumController : ControllerBase
