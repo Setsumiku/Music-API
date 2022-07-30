@@ -80,7 +80,7 @@ namespace Music_API.Controllers
         /// Use to Edit Genre
         /// </summary>
         /// <param name="id">String for ID of Genre</param>
-        /// <param name="genre">String for new name for the Genre</param>
+        /// <param name="genreName">String for new name for the Genre</param>
         /// <returns>Updated Genre</returns>
         // PUT api/<MusicAPIController>/genres/{id}
         [HttpPut("genres/{id}")]

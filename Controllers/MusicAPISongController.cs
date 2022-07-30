@@ -75,7 +75,7 @@ namespace Music_API.Controllers
         /// Use to Edit Song
         /// </summary>
         /// <param name="id">String for ID of Song</param>
-        /// <param name="song">String for new name for the Song</param>
+        /// <param name="songName">String for new name for the Song</param>
         /// <returns>Updated Song</returns>
         // PUT api/<MusicAPIController>/songs/{id}
         [HttpPut("songs/{id}")]

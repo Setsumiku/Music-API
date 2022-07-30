@@ -82,7 +82,7 @@ namespace Music_API.Controllers
         /// Use to Edit Artist
         /// </summary>
         /// <param name="id">String for ID of Artist</param>
-        /// <param name="artist">String for new name for the Artist</param>
+        /// <param name="artistName">String for new name for the Artist</param>
         /// <returns>Updated Artist</returns>
         // PUT api/<MusicAPIController>/artists/{id}
         [HttpPut("artists/{id}")]

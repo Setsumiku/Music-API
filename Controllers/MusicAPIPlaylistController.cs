@@ -81,7 +81,7 @@ namespace Music_API.Controllers
         /// Use to Edit Playlist
         /// </summary>
         /// <param name="id">String for ID of Playlist</param>
-        /// <param name="playlist">String for new name for the Playlist</param>
+        /// <param name="playlistName">String for new name for the Playlist</param>
         /// <returns>Updated Playlist</returns>
         // PUT api/<MusicAPIController>/playlists/{id}
         [HttpPut("playlists/{id}")]

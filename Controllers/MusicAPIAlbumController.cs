@@ -80,7 +80,7 @@ namespace Music_API.Controllers
         /// Use to Edit Album
         /// </summary>
         /// <param name="id">String for ID of Album</param>
-        /// <param name="album">String for new name for the Album</param>
+        /// <param name="albumName">String for new name for the Album</param>
         /// <returns>Updated Album</returns>
         // PUT api/<MusicAPIController>/albums/{id}
         [HttpPut("albums/{id}")]
