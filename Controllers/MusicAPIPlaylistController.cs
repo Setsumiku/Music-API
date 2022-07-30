@@ -15,7 +15,7 @@ namespace Music_API.Controllers
         private readonly IBaseRepository<Playlist> _playlistRepository;
         private readonly LinkGenerator _linkGenerator;
 
-        public MusicAPIPlaylistController(IMapper mapper, ILogger<MusicAPIPlaylistController> logger, LinkGenerator linkGenerator, 
+        public MusicAPIPlaylistController(IMapper mapper, ILogger<MusicAPIPlaylistController> logger, LinkGenerator linkGenerator,
             IBaseRepository<Song> songRepository, IBaseRepository<Playlist> playlistRepository)
         {
             _mapper = mapper;
@@ -24,6 +24,7 @@ namespace Music_API.Controllers
             _playlistRepository = playlistRepository;
             _linkGenerator = linkGenerator;
         }
+
         /// <summary>
         /// Use to receive all Playlists
         /// </summary>
@@ -42,6 +43,7 @@ namespace Music_API.Controllers
             var playlistsWrapper = new LinkCollectionWrapper<PlaylistReadDto>(playlists);
             return Ok(CreateLinksForPlaylists(playlistsWrapper));
         }
+
         /// <summary>
         /// Use to receive specific Playlist
         /// </summary>
@@ -52,15 +54,16 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, Array.Empty<string>());
-            if(foundPlaylist is null) return NotFound();
+            if (foundPlaylist is null) return NotFound();
             var mappedPlaylist = _mapper.Map<PlaylistReadDto>(foundPlaylist);
             mappedPlaylist.Add("Name", new { mappedPlaylist.PlaylistDescription });
             var songLink = new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetPlaylistSongs), values: new { id }),
                 "get_playlist_songs",
                 "GET");
-            mappedPlaylist.Add("Links", CreateLinksForPlaylist(foundPlaylist.PlaylistId, "" , songLink));
+            mappedPlaylist.Add("Links", CreateLinksForPlaylist(foundPlaylist.PlaylistId, "", songLink));
             return Ok(mappedPlaylist);
         }
+
         /// <summary>
         /// Use to Create a new Playlist
         /// </summary>
@@ -73,6 +76,7 @@ namespace Music_API.Controllers
             var savedPlaylist = await _playlistRepository.CreateAsync(new Playlist() { PlaylistDescription = playlistName });
             return Created("api/MusicAPIPlaylist/playlists/" + savedPlaylist.PlaylistId, _mapper.Map<PlaylistReadDto>(savedPlaylist));
         }
+
         /// <summary>
         /// Use to Edit Playlist
         /// </summary>
@@ -99,6 +103,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Playlist
         /// </summary>
@@ -119,6 +124,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get songs from specific Playlist
         /// </summary>
@@ -136,7 +142,7 @@ namespace Music_API.Controllers
                 for (var index = 0; index < songList.Count(); index++)
                 {
                     songList.ElementAt(index).Add("Name", new { songList.ElementAt(index).SongDescription });
-                    var songLinks = CreateLinksForSong(id, index+1);
+                    var songLinks = CreateLinksForSong(id, index + 1);
                     songList.ElementAt(index).Add("Links", songLinks);
                 }
                 var songsWrapper = new LinkCollectionWrapper<SongReadDto>(songList);
@@ -147,6 +153,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get specific Song from specific Playlist
         /// </summary>
@@ -160,7 +167,7 @@ namespace Music_API.Controllers
             try
             {
                 var foundPlaylist = await _playlistRepository.GetSingleByConditionAsync(playlist => playlist.PlaylistId == id, new string[] { "PlaylistSongs" });
-                if(foundPlaylist is null) return NotFound();
+                if (foundPlaylist is null) return NotFound();
                 var songFromPlaylist = foundPlaylist.PlaylistSongs[id2 - 1];
                 var mappedSong = _mapper.Map<SongReadDto>(songFromPlaylist);
                 mappedSong.Add("Name", new { mappedSong.SongDescription });
@@ -172,6 +179,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Add specific song to a specific Playlist
         /// </summary>
@@ -199,6 +207,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove song from a Playlist
         /// </summary>
@@ -244,6 +253,7 @@ namespace Music_API.Controllers
 
             return links;
         }
+
         private IEnumerable<Link> CreateLinksForSong(int id, int id2, Link optional = null)
         {
             var links = new List<Link>
@@ -273,6 +283,7 @@ namespace Music_API.Controllers
 
             return playlistsWrapper;
         }
+
         private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
         {
             songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetPlaylistSongs), values: new { }),

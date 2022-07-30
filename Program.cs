@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Music_API.Data.Context;
 using Music_API.Data.DAL;
 using Serilog;
-using Serilog.Events;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,11 +12,11 @@ builder.Services.AddControllers().AddControllersAsServices();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1",new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title="Music Api",
-        Description="API For managing music and music adjacent areas",
-        Version="v1"
+        Title = "Music Api",
+        Description = "API For managing music and music adjacent areas",
+        Version = "v1"
     });
     var fileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var filePath = Path.Combine(AppContext.BaseDirectory, fileName);
@@ -40,7 +38,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json","Swagger Music API");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger Music API");
     });
 }
 

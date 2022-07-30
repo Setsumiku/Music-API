@@ -23,6 +23,7 @@ namespace Music_API.Controllers
             _genreRepository = genreRepository;
             _linkGenerator = linkGenerator;
         }
+
         /// <summary>
         /// Use to receive all Genres
         /// </summary>
@@ -40,8 +41,8 @@ namespace Music_API.Controllers
             }
             var genresWrapper = new LinkCollectionWrapper<GenreReadDto>(genres);
             return Ok(CreateLinksForGenres(genresWrapper));
-
         }
+
         /// <summary>
         /// Use to receive specific Genre
         /// </summary>
@@ -61,6 +62,7 @@ namespace Music_API.Controllers
             mappedGenre.Add("Links", CreateLinksForGenre(foundGenre.GenreId, "", albumLink));
             return Ok(mappedGenre);
         }
+
         /// <summary>
         /// Use to Create a new Genre
         /// </summary>
@@ -73,6 +75,7 @@ namespace Music_API.Controllers
             var savedGenre = await _genreRepository.CreateAsync(new Genre() { GenreDescription = genreName });
             return Created("api/MusicAPIGenre/genres/" + savedGenre.GenreId, _mapper.Map<GenreReadDto>(savedGenre));
         }
+
         /// <summary>
         /// Use to Edit Genre
         /// </summary>
@@ -99,6 +102,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Genre
         /// </summary>
@@ -119,6 +123,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get albums from specific Genre
         /// </summary>
@@ -147,6 +152,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get specific Album from specific Genre
         /// </summary>
@@ -172,6 +178,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Add specific Album to a specific Genre
         /// </summary>
@@ -199,6 +206,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Album from a Genre
         /// </summary>
@@ -244,6 +252,7 @@ namespace Music_API.Controllers
 
             return links;
         }
+
         private IEnumerable<Link> CreateLinksForAlbum(int id, int id2, Link optional = null)
         {
             var links = new List<Link>
@@ -264,6 +273,7 @@ namespace Music_API.Controllers
 
             return links;
         }
+
         private LinkCollectionWrapper<GenreReadDto> CreateLinksForGenres(LinkCollectionWrapper<GenreReadDto> genresWrapper)
         {
             genresWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get), values: new { }),
@@ -272,6 +282,7 @@ namespace Music_API.Controllers
 
             return genresWrapper;
         }
+
         private LinkCollectionWrapper<AlbumReadDto> CreateLinksForAlbums(LinkCollectionWrapper<AlbumReadDto> albumsWrapper)
         {
             albumsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetGenreAlbums), values: new { }),

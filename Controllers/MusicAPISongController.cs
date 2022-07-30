@@ -21,6 +21,7 @@ namespace Music_API.Controllers
             _songRepository = songRepository;
             _linkGenerator = linkGenerator;
         }
+
         /// <summary>
         /// Use to receive all Songs
         /// </summary>
@@ -30,7 +31,7 @@ namespace Music_API.Controllers
         public async Task<IActionResult> Get()
         {
             var songs = _mapper.Map<IEnumerable<SongReadDto>>(await _songRepository.GetAllAsync(Array.Empty<string>()));
-            for(var index = 0; index < songs.Count(); index++)
+            for (var index = 0; index < songs.Count(); index++)
             {
                 songs.ElementAt(index).Add("Name", new { songs.ElementAt(index).SongDescription });
                 var songLinks = CreateLinksForSong(songs.ElementAt(index).SongId);
@@ -38,8 +39,8 @@ namespace Music_API.Controllers
             }
             var songsWrapper = new LinkCollectionWrapper<SongReadDto>(songs);
             return Ok(CreateLinksForSongs(songsWrapper));
-
         }
+
         /// <summary>
         /// Use to receive specific Song
         /// </summary>
@@ -56,6 +57,7 @@ namespace Music_API.Controllers
             mappedSong.Add("Links", CreateLinksForSong(foundSong.SongId));
             return Ok(mappedSong);
         }
+
         /// <summary>
         /// Use to Create a new Song
         /// </summary>
@@ -68,6 +70,7 @@ namespace Music_API.Controllers
             var savedSong = await _songRepository.CreateAsync(new Song() { SongDescription = songName });
             return Created("api/MusicAPISong/songs/" + savedSong.SongId, _mapper.Map<SongReadDto>(savedSong));
         }
+
         /// <summary>
         /// Use to Edit Song
         /// </summary>
@@ -94,6 +97,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Song
         /// </summary>
@@ -109,11 +113,12 @@ namespace Music_API.Controllers
                 _ = await _songRepository.DeleteAsync(songToDelete);
                 return Ok();
             }
-            catch(Exception e) when(e is ArgumentNullException || e is NullReferenceException || e is DbUpdateConcurrencyException)
+            catch (Exception e) when (e is ArgumentNullException || e is NullReferenceException || e is DbUpdateConcurrencyException)
             {
                 return NotFound();
             }
         }
+
         private IEnumerable<Link> CreateLinksForSong(int id)
         {
             var links = new List<Link>
@@ -132,6 +137,7 @@ namespace Music_API.Controllers
             };
             return links;
         }
+
         private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
         {
             songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get)),

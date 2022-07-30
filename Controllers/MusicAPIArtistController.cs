@@ -21,6 +21,7 @@ namespace Music_API.Controllers
             _artistRepository = artistRepository;
             _linkGenerator = linkGenerator;
         }
+
         /// <summary>
         /// Use to receive all Artists
         /// </summary>
@@ -56,6 +57,7 @@ namespace Music_API.Controllers
             mappedArtist.Add("Links", CreateLinksForArtist(foundArtist.ArtistId));
             return Ok(mappedArtist);
         }
+
         /// <summary>
         /// Use to Create a new Artist
         /// </summary>
@@ -75,6 +77,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Edit Artist
         /// </summary>
@@ -101,6 +104,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Artist
         /// </summary>
@@ -140,6 +144,7 @@ namespace Music_API.Controllers
             };
             return links;
         }
+
         private LinkCollectionWrapper<ArtistReadDto> CreateLinksForArtists(LinkCollectionWrapper<ArtistReadDto> artistsWrapper)
         {
             artistsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(Get)),
@@ -150,6 +155,5 @@ namespace Music_API.Controllers
                 "POST"));
             return artistsWrapper;
         }
-
     }
 }

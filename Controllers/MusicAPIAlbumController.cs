@@ -23,6 +23,7 @@ namespace Music_API.Controllers
             _albumRepository = albumRepository;
             _linkGenerator = linkGenerator;
         }
+
         /// <summary>
         /// Use to receive all Albums
         /// </summary>
@@ -41,6 +42,7 @@ namespace Music_API.Controllers
             var albumsWrapper = new LinkCollectionWrapper<AlbumReadDto>(albums);
             return Ok(CreateLinksForPlaylists(albumsWrapper));
         }
+
         /// <summary>
         /// Use to receive specific Album
         /// </summary>
@@ -60,6 +62,7 @@ namespace Music_API.Controllers
             mappedAlbum.Add("Links", CreateLinksForAlbum(foundAlbum.AlbumId, "", songLink));
             return Ok(mappedAlbum);
         }
+
         /// <summary>
         /// Use to Create a new Album
         /// </summary>
@@ -72,6 +75,7 @@ namespace Music_API.Controllers
             var savedAlbum = await _albumRepository.CreateAsync(new Album() { AlbumDescription = albumName });
             return Created("api/MusicAPIAlbum/albums/" + savedAlbum.AlbumId, _mapper.Map<AlbumReadDto>(savedAlbum));
         }
+
         /// <summary>
         /// Use to Edit Album
         /// </summary>
@@ -98,6 +102,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove Album
         /// </summary>
@@ -118,6 +123,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get songs from specific Album
         /// </summary>
@@ -146,6 +152,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Get specific Song from specific Album
         /// </summary>
@@ -171,6 +178,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Add specific song to a specific Album
         /// </summary>
@@ -198,6 +206,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         /// <summary>
         /// Use to Remove song from an Album
         /// </summary>
@@ -222,6 +231,7 @@ namespace Music_API.Controllers
                 return NotFound();
             }
         }
+
         private IEnumerable<Link> CreateLinksForAlbum(int id, string fields = "", Link optional = null)
         {
             var links = new List<Link>
@@ -242,6 +252,7 @@ namespace Music_API.Controllers
 
             return links;
         }
+
         private IEnumerable<Link> CreateLinksForSong(int id, int id2, Link optional = null)
         {
             var links = new List<Link>
@@ -271,6 +282,7 @@ namespace Music_API.Controllers
 
             return albumWrapper;
         }
+
         private LinkCollectionWrapper<SongReadDto> CreateLinksForSongs(LinkCollectionWrapper<SongReadDto> songsWrapper)
         {
             songsWrapper.Links.Add(new Link(_linkGenerator.GetUriByAction(HttpContext, nameof(GetAlbumSongs), values: new { }),
@@ -279,6 +291,5 @@ namespace Music_API.Controllers
 
             return songsWrapper;
         }
-
     }
 }

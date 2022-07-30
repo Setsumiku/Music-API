@@ -16,6 +16,7 @@ namespace Music_API.Controllers
             _mapper = mapper;
             _linkGenerator = linkGenerator;
         }
+
         [HttpGet]
         public IActionResult GetRoot()
         {
