@@ -32,7 +32,6 @@ namespace Music_API.Controllers
                 var user = await GetUser(_userData.UserName, _userData.Password);
                 if (user != null)
                 {
-                    //create claims details based on the user information
                     var claims = new[] {
                         new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
                         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),

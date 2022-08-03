@@ -33,8 +33,4 @@
     <ProjectReference Include="..\Music API.Data\Music API.Data.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Entities\AuthenticationModels\" />
-  </ItemGroup>
-
 </Project>
